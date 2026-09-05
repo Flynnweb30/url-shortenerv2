@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - my.short</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C63F9' stroke-width='2'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E" type="image/svg+xml">
+</head>
+<body>
+    <div id="app">
+        <!-- Navbar -->
+        <nav class="navbar" id="mainNav">
+            <div class="container nav-container">
+                <a href="/" class="brand">
+                    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="#6C63F9" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                    <span class="brand-text">my<span class="brand-highlight">.short</span></span>
+                </a>
+                <div class="nav-links" id="navLinks">
+                    <a href="/" class="nav-link">Shorten</a>
+                    <a href="/dashboard.html" class="nav-link active">
+                        <i class="fas fa-th-list"></i> My Links
+                    </a>
+                    <span id="userNameDisplay" style="display:none;"></span>
+                    <a href="/login.html" class="nav-link" id="loginLink" style="display:none;">Login</a>
+                    <a href="/register.html" class="btn btn-primary btn-sm" id="signupBtn" style="display:none;"><i class="fas fa-user-plus"></i> Sign up</a>
+                    <button class="btn btn-outline btn-sm" id="logoutBtn" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+                <button class="mobile-toggle" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </nav>
+
+        <main class="dashboard-main">
+            <div class="container">
+                <div class="dashboard-header">
+                    <div>
+                        <h1 class="dashboard-title">My Short Links</h1>
+                        <p class="dashboard-subtitle">Manage and track all your shortened URLs</p>
+                    </div>
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Short Link
+                    </a>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-link"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalLinks">0</span>
+                            <span class="stat-label">Total Links</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalClicks">0</span>
+                            <span class="stat-label">Total Clicks</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="activeLinks">0</span>
+                            <span class="stat-label">Active Links</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Links List -->
+                <div class="links-section">
+                    <div class="links-header">
+                        <h3>Your Links</h3>
+                        <div class="links-actions">
+                            <button class="btn btn-sm btn-outline" onclick="refreshLinks()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div id="linksContainer">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading your links...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-top">
+                    <div>
+                        <a href="/" class="brand brand-footer">
+                            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="#6C63F9" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            <span class="brand-text">my<span class="brand-highlight">.short</span></span>
+                        </a>
+                        <div class="footer-copy">© 2026 my.short · Free URL Shortener</div>
+                    </div>
+                    <div class="footer-links">
+                        <a href="#">Features</a>
+                        <a href="#">Pricing</a>
+                        <a href="#">Blog</a>
+                        <a href="#">Contact</a>
+                        <a href="#">Terms</a>
+                        <a href="#">Privacy</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span>⚡ Shorten, share, track — all in one place.</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script type="module" src="/js/dashboard.js"></script>
+</body>
+</html>

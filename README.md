@@ -1,6 +1,6 @@
 # URL Shortener - my.short
 
-A modern, responsive URL shortener application with analytics tracking and custom aliases.
+A modern, responsive URL shortener with Firebase authentication, custom aliases, and click tracking.
 
 ## Features
 
@@ -8,21 +8,22 @@ A modern, responsive URL shortener application with analytics tracking and custo
 - ✏️ **Custom Aliases** - Brand your links with memorable names
 - 🔒 **Password Protection** - Secure your analytics with passwords
 - 📊 **Real-time Analytics** - Track clicks and engagement
+- 🚀 **Google Sign-In** - Quick and secure authentication
 - 📱 **Fully Responsive** - Works on all devices
-- 🎨 **Modern UI** - Clean, intuitive interface
+- 🔐 **User Isolation** - Each user's data is private and secure
 
 ## Tech Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES Modules)
 - **Backend**: Firebase (Firestore, Authentication)
-- **Hosting**: Netlify Ready
+- **Hosting**: Static hosting (Netlify, Render, Vercel)
 
 ## Setup Instructions
 
 ### 1. Firebase Configuration
 
 1. Create a Firebase project at https://console.firebase.google.com/
-2. Enable Authentication (Email/Password)
+2. Enable Authentication (Email/Password + Google)
 3. Create Firestore Database
 4. Copy your Firebase config object
 
@@ -32,10 +33,10 @@ Open `/public/js/firebase.js` and replace with your config:
 
 ```javascript
 const firebaseConfig = {
-  apiKey: "AIzaSyBFF9m_6NidWN0HxpDG9TRjOLiytOgNbn4",
-  authDomain: "url-shortener-61f15.firebaseapp.com",
-  projectId: "url-shortener-61f15",
-  storageBucket: "url-shortener-61f15.firebasestorage.app",
-  messagingSenderId: "641845296081",
-  appId: "1:641845296081:web:e4bafa6ceb44db0f763ef0",
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };

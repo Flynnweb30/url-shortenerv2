@@ -17,21 +17,21 @@ const generateShortCode = async () => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const codeLength = 6;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15;
 
     while (attempts < maxAttempts) {
         let code = '';
         for (let i = 0; i < codeLength; i++) {
             code += characters.charAt(Math.floor(Math.random() * characters.length));
         }
-        
+
         const isUnique = await checkShortCodeUnique(code);
         if (isUnique) {
             return code;
         }
         attempts++;
     }
-    throw new Error('Unable to generate unique short code');
+    throw new Error('Unable to generate unique short code. Please try again.');
 };
 
 // Check if a short code is unique
@@ -48,7 +48,7 @@ const checkShortCodeUnique = async (shortCode) => {
 };
 
 // Create a short link
-export const createShortLink = async (longUrl, customAlias, analyticsPassword, linkTitle, expiresInDays) => {
+export const createShortLink = async (longUrl, customAlias, analyticsPassword, linkTitle, expiresInDays, userId) => {
     try {
         // Validate URL
         if (!longUrl || !longUrl.trim()) {
@@ -62,6 +62,11 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
             throw new Error('Invalid URL format. Please include http:// or https://');
         }
 
+        // Validate userId
+        if (!userId) {
+            throw new Error('User authentication required');
+        }
+
         let shortCode = customAlias ? customAlias.trim() : null;
 
         // If custom alias provided, validate it
@@ -69,7 +74,7 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
             if (!/^[a-zA-Z0-9-_]{3,30}$/.test(shortCode)) {
                 throw new Error('Alias must be 3-30 characters and contain only letters, numbers, hyphens, and underscores');
             }
-            
+
             const isUnique = await checkShortCodeUnique(shortCode);
             if (!isUnique) {
                 throw new Error('This alias is already taken. Please choose another.');
@@ -82,6 +87,7 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
         const linkData = {
             longUrl: longUrl.trim(),
             shortCode: shortCode,
+            userId: userId,
             clicks: 0,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -94,10 +100,10 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
         // Save to Firestore
         const linksRef = collection(db, 'links');
         const docRef = await addDoc(linksRef, linkData);
-        
+
         // Get the created document
         const docSnapshot = await getDoc(docRef);
-        
+
         if (!docSnapshot.exists()) {
             throw new Error('Failed to retrieve created link');
         }
@@ -121,20 +127,20 @@ export const getLinkByShortCode = async (shortCode) => {
         const linksRef = collection(db, 'links');
         const q = query(linksRef, where('shortCode', '==', shortCode), where('isActive', '==', true));
         const querySnapshot = await getDocs(q);
-        
+
         if (querySnapshot.empty) {
             return null;
         }
-        
+
         const doc = querySnapshot.docs[0];
         const data = doc.data();
-        
+
         // Check if link has expired
         if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
             await updateDoc(doc.ref, { isActive: false });
             return null;
         }
-        
+
         return {
             id: doc.id,
             ...data,
@@ -152,10 +158,14 @@ export const getLinkByShortCode = async (shortCode) => {
 export const incrementClicks = async (linkId) => {
     try {
         const linkRef = doc(db, 'links', linkId);
-        await updateDoc(linkRef, {
-            clicks: (await getDoc(linkRef)).data().clicks + 1,
-            lastClicked: serverTimestamp()
-        });
+        const docSnap = await getDoc(linkRef);
+        if (docSnap.exists()) {
+            const currentClicks = docSnap.data().clicks || 0;
+            await updateDoc(linkRef, {
+                clicks: currentClicks + 1,
+                lastClicked: serverTimestamp()
+            });
+        }
     } catch (error) {
         console.error('Error incrementing clicks:', error);
     }
@@ -167,7 +177,7 @@ export const getUserLinks = async (userId) => {
         const linksRef = collection(db, 'links');
         const q = query(linksRef, where('userId', '==', userId));
         const querySnapshot = await getDocs(q);
-        
+
         const links = [];
         querySnapshot.forEach(doc => {
             const data = doc.data();
@@ -179,7 +189,10 @@ export const getUserLinks = async (userId) => {
                 expiresAt: data.expiresAt?.toDate?.() || null
             });
         });
-        
+
+        // Sort by createdAt descending (newest first)
+        links.sort((a, b) => b.createdAt - a.createdAt);
+
         return links;
     } catch (error) {
         console.error('Error getting user links:', error);
