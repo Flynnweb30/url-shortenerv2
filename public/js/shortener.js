@@ -51,7 +51,6 @@ async function checkShortCodeExists(shortCode) {
 // Create short link
 export async function createShortLink(longUrl, customAlias, title, expiresIn, userId = null) {
     try {
-        // Validate URL
         if (!longUrl || !longUrl.trim()) {
             throw new Error('URL is required');
         }

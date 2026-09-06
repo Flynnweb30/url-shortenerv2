@@ -1,13 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Links collection - critical for redirects
     match /links/{linkId} {
+      // Anyone can read active links (for redirects)
       allow read: if resource.data.isActive == true;
+      
+      // Anyone can create links (guest or authenticated)
       allow create: if true;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Only owners can update/delete
+      allow update, delete: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         resource.data.isGuest == true);
     }
     
+    // Users collection
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

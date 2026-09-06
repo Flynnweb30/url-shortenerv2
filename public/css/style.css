@@ -9,6 +9,7 @@ body {
     background: #f8fafc;
     color: #1e293b;
     line-height: 1.6;
+    min-height: 100vh;
 }
 
 .container {
@@ -19,7 +20,8 @@ body {
 
 /* Navbar */
 .navbar {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid #e2e8f0;
     padding: 16px 0;
     position: sticky;
@@ -85,6 +87,9 @@ body {
     padding: 8px 20px;
     border-radius: 8px;
     transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
 }
 
 .btn-primary:hover {
@@ -126,9 +131,21 @@ body {
 }
 
 .hero-content {
-    max-width: 700px;
+    max-width: 720px;
     margin: 0 auto;
     text-align: center;
+}
+
+.badge {
+    display: inline-block;
+    background: white;
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
 }
 
 .hero h1 {
@@ -151,6 +168,11 @@ body {
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
     text-align: left;
+    transition: box-shadow 0.3s;
+}
+
+.shorten-form:hover {
+    box-shadow: 0 24px 80px rgba(108, 99, 249, 0.1);
 }
 
 .form-group {
@@ -159,9 +181,22 @@ body {
     margin-bottom: 12px;
 }
 
-.form-group input {
+.input-wrapper {
     flex: 1;
-    padding: 14px 18px;
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 18px 14px 44px;
     border: 2px solid #e2e8f0;
     border-radius: 10px;
     font-size: 16px;
@@ -169,7 +204,7 @@ body {
     background: #f8fafc;
 }
 
-.form-group input:focus {
+.input-wrapper input:focus {
     outline: none;
     border-color: #6C63F9;
     background: white;
@@ -207,19 +242,9 @@ body {
     gap: 12px;
 }
 
-.form-options input {
-    padding: 10px 14px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
+.form-options .input-wrapper input {
+    padding: 10px 14px 10px 40px;
     font-size: 14px;
-    transition: all 0.2s;
-    background: #f8fafc;
-}
-
-.form-options input:focus {
-    outline: none;
-    border-color: #6C63F9;
-    background: white;
 }
 
 .guest-notice {
@@ -457,6 +482,108 @@ footer {
     to { transform: translateX(0); opacity: 1; }
 }
 
+/* Dashboard specific */
+.links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.link-item {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.link-item:hover {
+    border-color: #6C63F9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.link-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.link-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.link-short {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.link-short a {
+    color: #6C63F9;
+    text-decoration: none;
+}
+
+.link-short a:hover {
+    text-decoration: underline;
+}
+
+.link-original {
+    color: #94a3b8;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+.link-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.status-active {
+    color: #16a34a;
+}
+
+.status-expired {
+    color: #ef4444;
+}
+
+.link-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.empty-state h3 {
+    color: #1e293b;
+    margin: 8px 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .mobile-toggle {
@@ -507,6 +634,19 @@ footer {
 
     .modal-value {
         max-width: 100%;
+    }
+
+    .link-item {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .link-actions {
+        width: 100%;
+    }
+
+    .link-actions button {
+        flex: 1;
     }
 }
 

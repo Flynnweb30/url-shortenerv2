@@ -94,7 +94,6 @@ const shortenBtn = document.getElementById('shortenBtn');
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Show loading
     btnText.textContent = 'Creating...';
     btnLoader.style.display = 'inline-block';
     shortenBtn.disabled = true;
@@ -109,15 +108,11 @@ form.addEventListener('submit', async (e) => {
             currentUser?.uid
         );
 
-        // Show success
         result.className = 'result success';
         result.textContent = '✅ Link created successfully!';
         result.style.display = 'block';
 
-        // Show modal with link details
         showModal(linkData);
-
-        // Reset form
         form.reset();
 
     } catch (error) {
@@ -143,7 +138,6 @@ function showModal(linkData) {
     document.getElementById('modalShortUrl').textContent = shortUrl;
     document.getElementById('modalOriginalUrl').textContent = linkData.longUrl;
     
-    // Show guest message if not logged in
     if (!currentUser) {
         document.getElementById('modalGuestMsg').style.display = 'block';
     } else {
@@ -151,8 +145,6 @@ function showModal(linkData) {
     }
     
     document.getElementById('successModal').style.display = 'flex';
-    
-    // Store for copy
     document.getElementById('successModal').dataset.shortUrl = shortUrl;
 }
 
@@ -166,7 +158,6 @@ window.copyLink = function() {
         navigator.clipboard.writeText(url).then(() => {
             showToast('Link copied!');
         }).catch(() => {
-            // Fallback
             const input = document.createElement('input');
             input.value = url;
             document.body.appendChild(input);

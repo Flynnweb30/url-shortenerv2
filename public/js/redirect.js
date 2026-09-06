@@ -1,12 +1,16 @@
 import { getLinkByShortCode, incrementClicks } from './shortener.js';
 
-// THIS RUNS ON EVERY PAGE LOAD - HANDLES ALL SHORT URL REDIRECTS
+// ==========================================
+// CRITICAL: URL REDIRECT HANDLER
+// This runs on EVERY page load
+// ==========================================
+
 (async function() {
     try {
-        // Get the current path
+        // Get current path
         const path = window.location.pathname;
         
-        // Skip if this is a known page or asset
+        // Skip known pages and assets
         const skipPaths = [
             '/', '/index.html', '/dashboard.html', '/login.html', 
             '/register.html', '/404.html', '/favicon.ico'
@@ -16,13 +20,13 @@ import { getLinkByShortCode, incrementClicks } from './shortener.js';
             return;
         }
 
-        // Skip assets
-        const assetExtensions = ['.css', '.js', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.json'];
+        // Skip static assets
+        const assetExtensions = ['.css', '.js', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.json', '.xml', '.webmanifest'];
         if (assetExtensions.some(ext => path.endsWith(ext))) {
             return;
         }
 
-        // Extract the short code
+        // Extract short code
         const shortCode = path.substring(1);
         
         // Validate format
@@ -30,12 +34,12 @@ import { getLinkByShortCode, incrementClicks } from './shortener.js';
             return;
         }
 
-        console.log('🔗 Redirecting short code:', shortCode);
+        console.log('🔗 Redirecting:', shortCode);
 
-        // Show loading
-        showLoading();
+        // Show loading animation
+        showRedirectLoading();
 
-        // Get the link
+        // Look up the link
         const link = await getLinkByShortCode(shortCode);
         
         if (link && link.longUrl) {
@@ -44,52 +48,111 @@ import { getLinkByShortCode, incrementClicks } from './shortener.js';
                 await incrementClicks(link.id);
             }
             
-            // Redirect after a moment
+            // Show success then redirect
+            showRedirectSuccess(link);
             setTimeout(() => {
                 window.location.href = link.longUrl;
-            }, 500);
+            }, 800);
         } else {
             // Link not found
+            showRedirectError();
             setTimeout(() => {
                 window.location.href = '/404.html';
-            }, 1500);
-            showError('Link not found or has expired.');
+            }, 2000);
         }
     } catch (error) {
         console.error('Redirect error:', error);
         setTimeout(() => {
             window.location.href = '/404.html';
-        }, 1500);
+        }, 2000);
     }
 })();
 
-function showLoading() {
-    document.body.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; font-family:system-ui; background:#f8fafc;">
-            <div style="font-size:48px; margin-bottom:20px;">🔗</div>
-            <div style="font-size:20px; font-weight:600; color:#1e293b;">Redirecting you...</div>
-            <div style="color:#64748b; margin-top:8px;">Please wait</div>
-            <div style="width:200px; height:4px; background:#e2e8f0; border-radius:2px; margin-top:20px; overflow:hidden;">
-                <div style="width:30%; height:100%; background:linear-gradient(90deg,#6C63F9,#00D4AA); border-radius:2px; animation:progress 1.2s ease-in-out infinite;"></div>
-            </div>
-            <style>
-                @keyframes progress {
-                    0% { width: 10%; }
-                    50% { width: 70%; }
-                    100% { width: 90%; }
-                }
-            </style>
-        </div>
+function showRedirectLoading() {
+    // Clear and style page
+    document.body.innerHTML = '';
+    document.body.style.cssText = `
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     `;
+    
+    const container = document.createElement('div');
+    container.style.cssText = `
+        text-align: center;
+        padding: 40px;
+        animation: fadeInUp 0.6s ease;
+    `;
+    
+    container.innerHTML = `
+        <div style="font-size: 64px; margin-bottom: 20px; display: inline-block; animation: pulse 1.5s ease-in-out infinite;">
+            🔗
+        </div>
+        <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 24px;">Finding your link...</h2>
+        <p style="color: #64748b; margin-bottom: 24px;">Please wait while we redirect you</p>
+        <div style="width: 240px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto; overflow: hidden;">
+            <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #6C63F9, #00D4AA); border-radius: 2px; animation: progress 1.5s ease-in-out infinite;"></div>
+        </div>
+        <style>
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+            @keyframes progress {
+                0% { width: 10%; }
+                50% { width: 70%; }
+                100% { width: 90%; }
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(container);
 }
 
-function showError(message) {
-    const el = document.querySelector('body > div');
-    if (el) {
-        el.innerHTML = `
-            <div style="font-size:48px; margin-bottom:20px;">😕</div>
-            <div style="font-size:20px; font-weight:600; color:#dc2626;">${message}</div>
-            <div style="color:#64748b; margin-top:8px;">Redirecting to home...</div>
+function showRedirectSuccess(link) {
+    const container = document.querySelector('body > div');
+    if (container) {
+        container.innerHTML = `
+            <div style="font-size: 64px; margin-bottom: 20px; animation: bounceIn 0.6s ease;">
+                🎯
+            </div>
+            <h2 style="color: #16a34a; margin-bottom: 4px; font-size: 24px;">Redirecting...</h2>
+            <p style="color: #64748b; margin-bottom: 4px;">Taking you to</p>
+            <p style="color: #1e293b; font-weight: 600; word-break: break-all; max-width: 500px; margin: 8px auto;">
+                ${link.longUrl}
+            </p>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 12px;">
+                ✅ Link found! You'll be redirected shortly.
+            </p>
+            <style>
+                @keyframes bounceIn {
+                    0% { transform: scale(0.3); opacity: 0; }
+                    50% { transform: scale(1.1); }
+                    70% { transform: scale(0.9); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+            </style>
+        `;
+    }
+}
+
+function showRedirectError() {
+    const container = document.querySelector('body > div');
+    if (container) {
+        container.innerHTML = `
+            <div style="font-size: 64px; margin-bottom: 20px;">😕</div>
+            <h2 style="color: #dc2626; margin-bottom: 4px; font-size: 24px;">Link Not Found</h2>
+            <p style="color: #64748b; margin-top: 8px;">This short link doesn't exist or has expired.</p>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 12px;">Redirecting to home...</p>
         `;
     }
 }

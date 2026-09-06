@@ -1,5 +1,5 @@
-# SPA routing
+# SPA routing - all requests go to index.html
 /* /index.html 200
 
-# 404
+# 404 page
 /404 /404.html 404
