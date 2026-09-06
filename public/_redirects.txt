@@ -1,7 +1,5 @@
-# Single Page App Routing
-/*    /index.html    200
+# SPA routing
+/* /index.html 200
 
-# 404 Page
-/404    /404.html    404
-
-# Redirect short URLs - handled by JavaScript
+# 404
+/404 /404.html 404

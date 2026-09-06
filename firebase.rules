@@ -1,60 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-    
-    function isDocumentOwner() {
-      return request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    
-    function isGuestLink() {
-      return resource.data.isGuest == true && resource.data.userId == null;
-    }
-
-    // Users collection
-    match /users/{userId} {
-      allow read: if isAuthenticated() && isOwner(userId);
-      allow write: if isAuthenticated() && isOwner(userId);
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
-      allow delete: if false;
-    }
-
-    // Links collection - Critical for redirects
     match /links/{linkId} {
-      // READ: Anyone can read active links (required for redirects)
-      allow read: if resource.data.isActive == true || isDocumentOwner();
-      
-      // CREATE: Anyone can create links (guest or authenticated)
-      allow create: if 
-        (request.resource.data.shortCode != null &&
-        request.resource.data.longUrl != null) &&
-        (
-          (isAuthenticated() && request.resource.data.userId == request.auth.uid) ||
-          (request.resource.data.isGuest == true && request.resource.data.userId == null)
-        );
-      
-      // UPDATE: Only authenticated owners can update
-      allow update: if isAuthenticated() && isDocumentOwner();
-      
-      // DELETE: Only authenticated owners can delete
-      allow delete: if isAuthenticated() && isDocumentOwner();
+      allow read: if resource.data.isActive == true;
+      allow create: if true;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
-    // Analytics collection
-    match /analytics/{analyticId} {
-      allow read: if isAuthenticated() && isDocumentOwner();
-      allow write: if isAuthenticated() && isDocumentOwner();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isDocumentOwner();
-      allow delete: if false;
+    
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

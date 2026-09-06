@@ -2,281 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>my.short - URL Shortener</title>
-    <meta name="description" content="Free URL shortener with custom aliases and analytics">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C63F9' stroke-width='2'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E" type="image/svg+xml">
 </head>
 <body>
-    <div id="app">
-        <!-- Particle Background -->
-        <div class="particles" id="particles"></div>
-
-        <!-- Navbar -->
-        <nav class="navbar" id="mainNav">
-            <div class="container nav-container">
-                <a href="/" class="brand">
-                    <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="#6C63F9" stroke-width="2">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                    </svg>
-                    <span class="brand-text">my<span class="brand-highlight">.short</span></span>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="/" class="logo">
+                    <span class="logo-icon">🔗</span>
+                    <span>my<span class="highlight">.short</span></span>
                 </a>
                 <div class="nav-links" id="navLinks">
-                    <a href="/" class="nav-link active">Shorten</a>
-                    <a href="/dashboard.html" class="nav-link" id="dashboardLink" style="display:none;">
-                        <i class="fas fa-th-list"></i> My Links
-                    </a>
-                    <span id="userNameDisplay" style="display:none;"></span>
-                    <a href="/login.html" class="nav-link" id="loginLink">Login</a>
-                    <a href="/register.html" class="btn btn-primary btn-sm pulse-btn" id="signupBtn"><i class="fas fa-user-plus"></i> Sign up</a>
-                    <button class="btn btn-outline btn-sm" id="logoutBtn" style="display:none;" onclick="handleLogout()">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
+                    <a href="/" class="active">Home</a>
+                    <a href="/dashboard.html" id="dashboardLink" style="display:none;">Dashboard</a>
+                    <span id="userName" style="display:none;"></span>
+                    <a href="/login.html" id="loginLink">Login</a>
+                    <a href="/register.html" id="registerLink" class="btn-primary">Sign Up</a>
+                    <button id="logoutBtn" style="display:none;" class="btn-outline" onclick="logout()">Logout</button>
                 </div>
-                <button class="mobile-toggle" id="mobileToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button class="mobile-toggle" onclick="toggleMobile()">☰</button>
             </div>
-        </nav>
+        </div>
+    </nav>
 
-        <main>
-            <!-- Hero Section -->
-            <section class="hero-section" id="heroSection">
-                <div class="container hero-grid">
-                    <div class="hero-content">
-                        <div class="badge-group">
-                            <span class="badge floating-badge">
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                Trusted by 100K+ users
-                            </span>
-                        </div>
-                        <h1 class="hero-title">
-                            Shorten Your <span class="gradient-text">URLs</span> Instantly
-                            <span class="hero-emoji">✨</span>
-                        </h1>
-                        <p class="hero-sub">Create short, memorable links with advanced tracking</p>
-                        <p class="hero-desc">
-                            <span class="feature-tag"><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Custom aliases</span>
-                            <span class="feature-tag"><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Password protection</span>
-                            <span class="feature-tag"><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Real-time analytics</span>
-                        </p>
-                        
-                        <!-- Shorten Form -->
-                        <form class="shorten-form" id="shortenForm">
-                            <div class="main-shorten-block">
-                                <div class="input-wrapper">
-                                    <i class="fas fa-link input-prefix"></i>
-                                    <input type="url" id="longUrl" class="shorten-input" placeholder="Paste your long URL here..." required>
-                                </div>
-                                <button type="submit" class="shorten-btn" id="shortenBtn">
-                                    <span class="btn-label">SHORTEN</span>
-                                    <span class="btn-icon"><i class="fas fa-arrow-right"></i></span>
-                                    <span class="btn-loader" style="display:none;"><i class="fas fa-spinner fa-spin"></i></span>
-                                </button>
-                            </div>
-                            <div class="custom-row">
-                                <div class="input-wrapper">
-                                    <i class="fas fa-tag input-prefix"></i>
-                                    <input type="text" id="customAlias" class="shorten-input" placeholder="Custom alias (optional)" maxlength="30">
-                                </div>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock input-prefix"></i>
-                                    <input type="text" id="analyticsPassword" class="shorten-input" placeholder="Analytics password (optional)">
-                                </div>
-                            </div>
-                            <div style="margin-top: 10px; display: flex; gap: 12px; flex-wrap: wrap;">
-                                <div class="input-wrapper" style="flex:1; min-width:150px;">
-                                    <i class="fas fa-heading input-prefix"></i>
-                                    <input type="text" id="linkTitle" class="shorten-input" placeholder="Link title (optional)">
-                                </div>
-                                <div class="input-wrapper" style="flex:0.5; min-width:120px;">
-                                    <i class="fas fa-clock input-prefix"></i>
-                                    <input type="number" id="expiresInDays" class="shorten-input" placeholder="Expires in days">
-                                </div>
-                            </div>
-                            <div class="guest-notice" id="guestNotice">
-                                <i class="fas fa-info-circle"></i>
-                                <span>You're shortening as a guest. <a href="/login.html">Login</a> or <a href="/register.html">Sign up</a> to save and manage your links.</span>
-                            </div>
-                        </form>
-                        <div id="resultMessage" class="result-message"></div>
-                    </div>
-                    <div class="hero-image">
-                        <div class="floating-illustration">
-                            <img src="/img/url-shortener-illustration.svg" alt="URL Shortener" class="hero-img">
-                            <div class="floating-particle particle-1">⚡</div>
-                            <div class="floating-particle particle-2">🚀</div>
-                            <div class="floating-particle particle-3">✨</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Features -->
-            <section class="feature-section">
-                <div class="container">
-                    <h2 class="section-title">Why Choose <span class="highlight">my.short</span></h2>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-link"></i></div>
-                            <h3>Smart Shortening</h3>
-                            <p>Create short, clean URLs instantly. Customize with your own alias for branding.</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
-                            <h3>Detailed Analytics</h3>
-                            <p>Track every click with comprehensive insights into your audience behavior.</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                            <h3>Secure & Private</h3>
-                            <p>Password-protect your analytics and keep your link data safe and private.</p>
-                        </div>
-                    </div>
-
-                    <!-- Benefits -->
-                    <div class="benefits-section" id="benefitsSection">
-                        <h3 style="text-align:center; margin-top: 50px; color: var(--gray-800);">
-                            <span id="benefitsTitle">🚀 Sign up for free to unlock more features</span>
-                        </h3>
-                        <div class="benefits-grid" id="benefitsGrid">
-                            <div class="benefit-item">
-                                <i class="fas fa-save" style="color: var(--primary);"></i>
-                                <span>Save your links forever</span>
-                            </div>
-                            <div class="benefit-item">
-                                <i class="fas fa-history" style="color: var(--primary);"></i>
-                                <span>Full link history</span>
-                            </div>
-                            <div class="benefit-item">
-                                <i class="fas fa-chart-line" style="color: var(--primary);"></i>
-                                <span>Advanced analytics</span>
-                            </div>
-                            <div class="benefit-item">
-                                <i class="fas fa-sync" style="color: var(--primary);"></i>
-                                <span>Sync across devices</span>
-                            </div>
-                            <div class="benefit-item">
-                                <i class="fas fa-tag" style="color: var(--primary);"></i>
-                                <span>Custom branding</span>
-                            </div>
-                            <div class="benefit-item">
-                                <i class="fas fa-shield-alt" style="color: var(--primary);"></i>
-                                <span>Enhanced security</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CTA -->
-            <section class="cta-section" id="ctaSection">
-                <div class="container cta-box">
-                    <div>
-                        <h2>Ready to get started?</h2>
-                        <p id="ctaText">Start shortening URLs instantly - no account needed! Create an account to save and manage your links.</p>
-                    </div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <a href="/register.html" class="btn btn-lg" style="background:#fff; color:var(--primary);">
-                            Sign Up Free <i class="fas fa-arrow-right"></i>
-                        </a>
-                        <a href="#shortenForm" class="btn btn-lg" style="background:rgba(255,255,255,0.2); color:white; border: 2px solid rgba(255,255,255,0.3);">
-                            Try Now <i class="fas fa-play"></i>
-                        </a>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
+    <main>
+        <section class="hero">
             <div class="container">
-                <div class="footer-top">
-                    <div>
-                        <a href="/" class="brand brand-footer">
-                            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="#6C63F9" stroke-width="2">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                            </svg>
-                            <span class="brand-text">my<span class="brand-highlight">.short</span></span>
-                        </a>
-                        <div class="footer-copy">© 2026 my.short · Free URL Shortener</div>
-                    </div>
-                    <div class="footer-links">
-                        <a href="#">Features</a>
-                        <a href="#">Pricing</a>
-                        <a href="#">Blog</a>
-                        <a href="#">Contact</a>
-                        <a href="#">Terms</a>
-                        <a href="#">Privacy</a>
-                    </div>
-                </div>
-                <div class="footer-bottom">
-                    <span>⚡ Shorten, share, track — all in one place.</span>
+                <div class="hero-content">
+                    <h1>Shorten Your <span class="gradient">URLs</span> Instantly</h1>
+                    <p class="subtitle">Create short, memorable links in seconds. No account needed.</p>
+                    
+                    <form id="shortenForm" class="shorten-form">
+                        <div class="form-group">
+                            <input type="url" id="longUrl" placeholder="Paste your long URL here..." required>
+                            <button type="submit" id="shortenBtn">
+                                <span id="btnText">Shorten</span>
+                                <span id="btnLoader" style="display:none;"><i class="fas fa-spinner fa-spin"></i></span>
+                            </button>
+                        </div>
+                        <div class="form-options">
+                            <input type="text" id="customAlias" placeholder="Custom alias (optional)">
+                            <input type="text" id="linkTitle" placeholder="Title (optional)">
+                            <input type="number" id="expiresIn" placeholder="Expires (days)">
+                        </div>
+                        <div id="guestNotice" class="guest-notice">
+                            <i class="fas fa-info-circle"></i> 
+                            You're shortening as a guest. <a href="/login.html">Login</a> to save your links.
+                        </div>
+                    </form>
+
+                    <div id="result" class="result" style="display:none;"></div>
                 </div>
             </div>
-        </footer>
-    </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>Why Choose <span class="gradient">my.short</span></h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Instant Shortening</h3>
+                        <p>Create short URLs in seconds with our fast and reliable service.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Custom Aliases</h3>
+                        <p>Brand your links with memorable custom aliases.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Track Clicks</h3>
+                        <p>Monitor how many people click your shortened links.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2026 my.short · Free URL Shortener</p>
+        </div>
+    </footer>
 
     <!-- Success Modal -->
-    <div class="modal-overlay" id="modalOverlay" style="display:none;">
+    <div id="successModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <button class="modal-close" id="modalCloseBtn">&times;</button>
-            <div class="modal-icon">
-                <span class="check"><i class="fas fa-check"></i></span>
-            </div>
-            <h2 class="modal-title">🎉 Link Created!</h2>
-            <p class="modal-subtitle">Your short link is ready to share</p>
-            
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-icon">✅</div>
+            <h2>Link Created!</h2>
             <div class="modal-field">
-                <span class="modal-field-label">Short URL</span>
-                <span class="modal-field-value">
-                    <a href="#" target="_blank" id="modalShortUrl"></a>
-                    <button class="btn btn-sm btn-outline" onclick="copyShortUrl()" style="margin-left:8px;">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </span>
+                <label>Short URL</label>
+                <div class="modal-value">
+                    <a href="#" id="modalShortUrl" target="_blank"></a>
+                    <button onclick="copyLink()" class="copy-btn">📋</button>
+                </div>
             </div>
             <div class="modal-field">
-                <span class="modal-field-label">Alias</span>
-                <span class="modal-field-value" id="modalAlias"></span>
+                <label>Original</label>
+                <div class="modal-value" id="modalOriginalUrl"></div>
             </div>
-            <div class="modal-field">
-                <span class="modal-field-label">Original</span>
-                <span class="modal-field-value">
-                    <a href="#" target="_blank" id="modalOriginalUrl" style="font-size:13px; color:var(--gray-500);"></a>
-                </span>
-            </div>
-            <div class="modal-field">
-                <span class="modal-field-label">Expires</span>
-                <span class="modal-field-value" id="modalExpiry"></span>
-            </div>
-            <div class="modal-field">
-                <span class="modal-field-label">Security</span>
-                <span class="modal-field-value" id="modalPassword"></span>
-            </div>
-            <div id="modalGuestMessage" style="display:none; margin-top: 12px; padding: 12px; background: #FEF3C7; border-radius: 8px; color: #92400E; font-size: 14px; text-align: center;">
+            <div id="modalGuestMsg" style="display:none; background:#FEF3C7; padding:12px; border-radius:8px; margin-top:12px; text-align:center;">
                 <i class="fas fa-info-circle"></i> 
-                <span>This link is saved as a guest. <a href="/login.html" style="color: var(--primary); font-weight: 600;">Login</a> or <a href="/register.html" style="color: var(--primary); font-weight: 600;">Sign up</a> to save and manage your links.</span>
+                <span>Login to save and manage your links.</span>
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="modalCopyBtn">
-                    <i class="fas fa-copy"></i> Copy
-                </button>
-                <button class="btn btn-primary" id="modalOpenBtn">
-                    <i class="fas fa-external-link-alt"></i> Open
-                </button>
-                <button class="btn btn-outline" id="modalCloseBtn2">
-                    <i class="fas fa-times"></i> Close
-                </button>
-            </div>
+            <button onclick="closeModal()" class="btn-primary" style="width:100%; margin-top:16px;">Done</button>
         </div>
     </div>
 
