@@ -1,4 +1,4 @@
-import { auth, db } from './firebase.js';
+import { auth } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 import { getUserLinks, deleteLink } from './shortener.js';
 
@@ -117,6 +117,7 @@ function renderLinks(links) {
                         ${link.expiresAt ? `<span><i class="fas fa-clock"></i> Expires: ${new Date(link.expiresAt).toLocaleDateString()}</span>` : ''}
                         <span class="${statusClass}"><i class="fas fa-circle"></i> ${status}</span>
                         ${link.analyticsPassword ? `<span><i class="fas fa-lock"></i> Password protected</span>` : ''}
+                        ${link.isGuest ? `<span><i class="fas fa-user"></i> Guest</span>` : ''}
                     </div>
                 </div>
                 <div class="link-actions">
@@ -152,14 +153,14 @@ window.deleteUserLink = async function(linkId) {
     if (!confirm('Are you sure you want to delete this link?')) return;
 
     try {
-        await deleteLink(linkId);
+        await deleteLink(linkId, currentUser?.uid);
         showToast('Link deleted successfully');
         if (currentUser) {
             loadLinks(currentUser.uid);
         }
     } catch (error) {
         console.error('Delete error:', error);
-        showToast('Failed to delete link', 'error');
+        showToast(error.message || 'Failed to delete link', 'error');
     }
 };
 

@@ -1,2 +1,15 @@
+# Redirect all short URLs to index.html for routing
 /* /index.html 200
+
+# 404 page
 /404 /404.html 404
+
+# Assets - allow direct access
+/css/* /css/:splat 200
+/js/* /js/:splat 200
+/img/* /img/:splat 200
+
+# Dashboard and auth pages
+/dashboard /dashboard.html 200
+/login /login.html 200
+/register /register.html 200

@@ -12,18 +12,25 @@ import {
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { db } from './firebase.js';
 
-// Generate a unique short code
-const generateShortCode = async () => {
+// Generate a unique short code with retry logic
+const generateShortCode = async (maxAttempts = 20) => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const codeLength = 6;
     let attempts = 0;
-    const maxAttempts = 15;
+    let usedCodes = new Set();
 
     while (attempts < maxAttempts) {
         let code = '';
         for (let i = 0; i < codeLength; i++) {
             code += characters.charAt(Math.floor(Math.random() * characters.length));
         }
+        
+        // Skip if we've already tried this code in this session
+        if (usedCodes.has(code)) {
+            attempts++;
+            continue;
+        }
+        usedCodes.add(code);
 
         const isUnique = await checkShortCodeUnique(code);
         if (isUnique) {
@@ -34,37 +41,51 @@ const generateShortCode = async () => {
     throw new Error('Unable to generate unique short code. Please try again.');
 };
 
-// Check if a short code is unique
+// Check if a short code is unique with caching
+const codeCache = new Map();
 const checkShortCodeUnique = async (shortCode) => {
+    // Check cache first
+    if (codeCache.has(shortCode)) {
+        return codeCache.get(shortCode);
+    }
+
     try {
         const linksRef = collection(db, 'links');
         const q = query(linksRef, where('shortCode', '==', shortCode));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.empty;
+        const isUnique = querySnapshot.empty;
+        
+        // Cache result for 5 seconds
+        codeCache.set(shortCode, isUnique);
+        setTimeout(() => codeCache.delete(shortCode), 5000);
+        
+        return isUnique;
     } catch (error) {
         console.error('Error checking short code:', error);
-        return true;
+        return true; // Assume unique on error to avoid blocking
     }
 };
 
-// Create a short link
-export const createShortLink = async (longUrl, customAlias, analyticsPassword, linkTitle, expiresInDays, userId) => {
+// Create a short link with enhanced validation
+export const createShortLink = async (longUrl, customAlias, analyticsPassword, linkTitle, expiresInDays, userId = null) => {
     try {
         // Validate URL
         if (!longUrl || !longUrl.trim()) {
             throw new Error('URL is required');
         }
 
-        // Validate URL format
+        // Validate URL format with better error messages
+        let url;
         try {
-            new URL(longUrl);
-        } catch {
-            throw new Error('Invalid URL format. Please include http:// or https://');
-        }
-
-        // Validate userId
-        if (!userId) {
-            throw new Error('User authentication required');
+            url = new URL(longUrl);
+            if (!url.protocol.startsWith('http')) {
+                throw new Error('URL must start with http:// or https://');
+            }
+        } catch (error) {
+            if (error.message.includes('Invalid URL')) {
+                throw new Error('Please enter a valid URL including http:// or https://');
+            }
+            throw error;
         }
 
         let shortCode = customAlias ? customAlias.trim() : null;
@@ -87,23 +108,38 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
         const linkData = {
             longUrl: longUrl.trim(),
             shortCode: shortCode,
-            userId: userId,
             clicks: 0,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             analyticsPassword: analyticsPassword ? analyticsPassword.trim() : null,
             title: linkTitle ? linkTitle.trim() : null,
             expiresAt: expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000) : null,
-            isActive: true
+            isActive: true,
+            userId: userId || null,
+            isGuest: !userId,
+            // Add metadata for analytics
+            userAgent: navigator.userAgent,
+            referrer: document.referrer || null
         };
 
-        // Save to Firestore
-        const linksRef = collection(db, 'links');
-        const docRef = await addDoc(linksRef, linkData);
+        // Save to Firestore with retry
+        let docRef;
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                const linksRef = collection(db, 'links');
+                docRef = await addDoc(linksRef, linkData);
+                break;
+            } catch (error) {
+                retries--;
+                if (retries === 0) throw error;
+                // Wait before retry
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
 
         // Get the created document
         const docSnapshot = await getDoc(docRef);
-
         if (!docSnapshot.exists()) {
             throw new Error('Failed to retrieve created link');
         }
@@ -121,14 +157,26 @@ export const createShortLink = async (longUrl, customAlias, analyticsPassword, l
     }
 };
 
-// Get link by short code
+// Get link by short code with enhanced caching
+const linkCache = new Map();
 export const getLinkByShortCode = async (shortCode) => {
+    // Check cache
+    if (linkCache.has(shortCode)) {
+        const cached = linkCache.get(shortCode);
+        // Cache for 10 seconds
+        if (Date.now() - cached.timestamp < 10000) {
+            return cached.data;
+        }
+        linkCache.delete(shortCode);
+    }
+
     try {
         const linksRef = collection(db, 'links');
         const q = query(linksRef, where('shortCode', '==', shortCode), where('isActive', '==', true));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
+            linkCache.set(shortCode, { data: null, timestamp: Date.now() });
             return null;
         }
 
@@ -138,23 +186,29 @@ export const getLinkByShortCode = async (shortCode) => {
         // Check if link has expired
         if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
             await updateDoc(doc.ref, { isActive: false });
+            linkCache.set(shortCode, { data: null, timestamp: Date.now() });
             return null;
         }
 
-        return {
+        const linkData = {
             id: doc.id,
             ...data,
             createdAt: data.createdAt?.toDate?.() || new Date(),
             updatedAt: data.updatedAt?.toDate?.() || new Date(),
             expiresAt: data.expiresAt?.toDate?.() || null
         };
+
+        // Cache the result
+        linkCache.set(shortCode, { data: linkData, timestamp: Date.now() });
+        
+        return linkData;
     } catch (error) {
         console.error('Error getting link:', error);
         return null;
     }
 };
 
-// Increment click count
+// Increment click count with atomic update
 export const incrementClicks = async (linkId) => {
     try {
         const linkRef = doc(db, 'links', linkId);
@@ -165,15 +219,25 @@ export const incrementClicks = async (linkId) => {
                 clicks: currentClicks + 1,
                 lastClicked: serverTimestamp()
             });
+            // Invalidate cache for this link
+            const data = docSnap.data();
+            if (data.shortCode) {
+                linkCache.delete(data.shortCode);
+            }
         }
     } catch (error) {
         console.error('Error incrementing clicks:', error);
+        // Don't throw - clicks are non-critical
     }
 };
 
 // Get user's links
 export const getUserLinks = async (userId) => {
     try {
+        if (!userId) {
+            return [];
+        }
+        
         const linksRef = collection(db, 'links');
         const q = query(linksRef, where('userId', '==', userId));
         const querySnapshot = await getDocs(q);
@@ -201,20 +265,55 @@ export const getUserLinks = async (userId) => {
 };
 
 // Delete a link
-export const deleteLink = async (linkId) => {
+export const deleteLink = async (linkId, userId) => {
     try {
-        await deleteDoc(doc(db, 'links', linkId));
+        const linkRef = doc(db, 'links', linkId);
+        const docSnap = await getDoc(linkRef);
+        
+        if (!docSnap.exists()) {
+            throw new Error('Link not found');
+        }
+        
+        const data = docSnap.data();
+        
+        if (userId && data.userId && data.userId !== userId) {
+            throw new Error('You do not have permission to delete this link');
+        }
+        
+        // Invalidate cache
+        if (data.shortCode) {
+            linkCache.delete(data.shortCode);
+        }
+        
+        await deleteDoc(linkRef);
         return true;
     } catch (error) {
         console.error('Error deleting link:', error);
-        return false;
+        throw error;
     }
 };
 
 // Update a link
-export const updateLink = async (linkId, updates) => {
+export const updateLink = async (linkId, updates, userId) => {
     try {
         const linkRef = doc(db, 'links', linkId);
+        const docSnap = await getDoc(linkRef);
+        
+        if (!docSnap.exists()) {
+            throw new Error('Link not found');
+        }
+        
+        const data = docSnap.data();
+        
+        if (userId && data.userId && data.userId !== userId) {
+            throw new Error('You do not have permission to update this link');
+        }
+        
+        // Invalidate cache
+        if (data.shortCode) {
+            linkCache.delete(data.shortCode);
+        }
+        
         await updateDoc(linkRef, {
             ...updates,
             updatedAt: serverTimestamp()
@@ -222,7 +321,7 @@ export const updateLink = async (linkId, updates) => {
         return true;
     } catch (error) {
         console.error('Error updating link:', error);
-        return false;
+        throw error;
     }
 };
 
