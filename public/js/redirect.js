@@ -1,5 +1,6 @@
 // ==========================================
 // URL REDIRECT HANDLER - Runs on EVERY page load
+// This is the most important file for redirects!
 // ==========================================
 
 (async function() {
@@ -30,7 +31,7 @@
         const shortCode = path.substring(1);
         console.log('🔗 Short code detected:', shortCode);
         
-        // Validate format
+        // Validate format - must be 3-30 chars, alphanumeric + - _
         if (!shortCode || !/^[a-zA-Z0-9-_]{3,30}$/.test(shortCode)) {
             console.log('⏭️ Skipping redirect (invalid short code format)');
             return;
@@ -38,13 +39,13 @@
 
         console.log('🚀 Attempting redirect for:', shortCode);
 
-        // Show loading animation
+        // Show loading animation immediately
         showRedirectLoading();
 
-        // Dynamically import Firebase and shortener
+        // Load Firebase and shortener dynamically
         const { getLinkByShortCode, incrementClicks } = await import('./shortener.js');
         
-        // Look up the link
+        // Look up the link in Firestore
         const link = await getLinkByShortCode(shortCode);
         console.log('📦 Link found:', link ? 'Yes' : 'No');
         
@@ -69,6 +70,8 @@
         }
     } catch (error) {
         console.error('💥 Redirect error:', error);
+        // Show error and redirect to 404
+        showRedirectError();
         setTimeout(() => {
             window.location.href = '/404.html';
         }, 2000);
@@ -100,8 +103,8 @@ function showRedirectLoading() {
         <div style="font-size: 64px; margin-bottom: 20px; display: inline-block; animation: pulse 1.5s ease-in-out infinite;">
             🔗
         </div>
-        <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 24px;">Finding your link...</h2>
-        <p style="color: #64748b; margin-bottom: 24px;">Please wait while we redirect you</p>
+        <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 24px;">Redirecting you...</h2>
+        <p style="color: #64748b; margin-bottom: 24px;">Finding your link</p>
         <div style="width: 240px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto; overflow: hidden;">
             <div style="width: 30%; height: 100%; background: linear-gradient(90deg, #6C63F9, #00D4AA); border-radius: 2px; animation: progress 1.5s ease-in-out infinite;"></div>
         </div>
@@ -138,7 +141,7 @@ function showRedirectSuccess(link) {
                 ${link.longUrl}
             </p>
             <p style="color: #94a3b8; font-size: 14px; margin-top: 12px;">
-                ✅ Link found! You'll be redirected shortly.
+                ✅ Link found! Redirecting shortly...
             </p>
             <style>
                 @keyframes bounceIn {

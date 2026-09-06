@@ -103,7 +103,7 @@ export async function createShortLink(longUrl, customAlias, title, expiresIn, us
     }
 }
 
-// Get link by short code
+// Get link by short code - CRITICAL for redirects
 export async function getLinkByShortCode(shortCode) {
     try {
         const linksRef = collection(db, 'links');
@@ -117,6 +117,7 @@ export async function getLinkByShortCode(shortCode) {
         const doc = snapshot.docs[0];
         const data = doc.data();
 
+        // Check if link has expired
         if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
             await updateDoc(doc.ref, { isActive: false });
             return null;

@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Links collection - critical for redirects
+    // Links collection - CRITICAL for redirects
     match /links/{linkId} {
       // Anyone can read active links (for redirects)
       allow read: if resource.data.isActive == true;
