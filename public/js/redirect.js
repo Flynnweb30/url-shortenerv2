@@ -1,14 +1,12 @@
-import { getLinkByShortCode, incrementClicks } from './shortener.js';
-
 // ==========================================
-// CRITICAL: URL REDIRECT HANDLER
-// This runs on EVERY page load
+// URL REDIRECT HANDLER - Runs on EVERY page load
 // ==========================================
 
 (async function() {
     try {
-        // Get current path
+        // Get the current path
         const path = window.location.pathname;
+        console.log('📍 Redirect check for path:', path);
         
         // Skip known pages and assets
         const skipPaths = [
@@ -17,30 +15,38 @@ import { getLinkByShortCode, incrementClicks } from './shortener.js';
         ];
         
         if (skipPaths.includes(path) || path === '/') {
+            console.log('⏭️ Skipping redirect (known path)');
             return;
         }
 
         // Skip static assets
         const assetExtensions = ['.css', '.js', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.json', '.xml', '.webmanifest'];
         if (assetExtensions.some(ext => path.endsWith(ext))) {
+            console.log('⏭️ Skipping redirect (asset file)');
             return;
         }
 
         // Extract short code
         const shortCode = path.substring(1);
+        console.log('🔗 Short code detected:', shortCode);
         
         // Validate format
         if (!shortCode || !/^[a-zA-Z0-9-_]{3,30}$/.test(shortCode)) {
+            console.log('⏭️ Skipping redirect (invalid short code format)');
             return;
         }
 
-        console.log('🔗 Redirecting:', shortCode);
+        console.log('🚀 Attempting redirect for:', shortCode);
 
         // Show loading animation
         showRedirectLoading();
 
+        // Dynamically import Firebase and shortener
+        const { getLinkByShortCode, incrementClicks } = await import('./shortener.js');
+        
         // Look up the link
         const link = await getLinkByShortCode(shortCode);
+        console.log('📦 Link found:', link ? 'Yes' : 'No');
         
         if (link && link.longUrl) {
             // Increment clicks
@@ -51,17 +57,18 @@ import { getLinkByShortCode, incrementClicks } from './shortener.js';
             // Show success then redirect
             showRedirectSuccess(link);
             setTimeout(() => {
+                console.log('🔀 Redirecting to:', link.longUrl);
                 window.location.href = link.longUrl;
             }, 800);
         } else {
-            // Link not found
+            console.log('❌ Link not found for:', shortCode);
             showRedirectError();
             setTimeout(() => {
                 window.location.href = '/404.html';
             }, 2000);
         }
     } catch (error) {
-        console.error('Redirect error:', error);
+        console.error('💥 Redirect error:', error);
         setTimeout(() => {
             window.location.href = '/404.html';
         }, 2000);
