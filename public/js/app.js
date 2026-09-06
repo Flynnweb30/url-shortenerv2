@@ -1,268 +1,289 @@
-import { 
-    collection, 
-    doc, 
-    getDocs, 
-    query, 
-    where, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc,
-    getDoc,
-    serverTimestamp 
-} from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-import { db } from './firebase.js';
+import { auth } from './firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+import { createShortLink } from './shortener.js';
 
-// Generate a unique short code
-const generateShortCode = async () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const codeLength = 6;
-    let attempts = 0;
-    const maxAttempts = 15;
-
-    while (attempts < maxAttempts) {
-        let code = '';
-        for (let i = 0; i < codeLength; i++) {
-            code += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-
-        const isUnique = await checkShortCodeUnique(code);
-        if (isUnique) {
-            return code;
-        }
-        attempts++;
+// ==========================================
+// PARTICLES BACKGROUND
+// ==========================================
+function createParticles() {
+    const container = document.getElementById('particles');
+    if (!container) return;
+    
+    const colors = ['#6C63F9', '#00D4AA', '#FBBF24', '#EF4444', '#3B82F6'];
+    const count = 30;
+    
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const size = Math.random() * 6 + 2;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+        particle.style.animationDelay = (Math.random() * 10) + 's';
+        particle.style.opacity = Math.random() * 0.3 + 0.1;
+        container.appendChild(particle);
     }
-    throw new Error('Unable to generate unique short code. Please try again.');
-};
+}
 
-// Check if a short code is unique
-const checkShortCodeUnique = async (shortCode) => {
-    try {
-        const linksRef = collection(db, 'links');
-        const q = query(linksRef, where('shortCode', '==', shortCode));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.empty;
-    } catch (error) {
-        console.error('Error checking short code:', error);
-        return true;
-    }
-};
+// Initialize particles
+document.addEventListener('DOMContentLoaded', createParticles);
 
-// Create a short link
-export const createShortLink = async (longUrl, customAlias, analyticsPassword, linkTitle, expiresInDays, userId = null) => {
-    try {
-        // Validate URL
-        if (!longUrl || !longUrl.trim()) {
-            throw new Error('URL is required');
+// ==========================================
+// TOAST NOTIFICATIONS
+// ==========================================
+function showToast(message, type = 'success') {
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-removing');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// ==========================================
+// DOM ELEMENTS
+// ==========================================
+const shortenForm = document.getElementById('shortenForm');
+const longUrl = document.getElementById('longUrl');
+const customAlias = document.getElementById('customAlias');
+const analyticsPassword = document.getElementById('analyticsPassword');
+const linkTitle = document.getElementById('linkTitle');
+const expiresInDays = document.getElementById('expiresInDays');
+const resultMessage = document.getElementById('resultMessage');
+const guestNotice = document.getElementById('guestNotice');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalShortUrl = document.getElementById('modalShortUrl');
+const modalAlias = document.getElementById('modalAlias');
+const modalOriginalUrl = document.getElementById('modalOriginalUrl');
+const modalExpiry = document.getElementById('modalExpiry');
+const modalPassword = document.getElementById('modalPassword');
+const modalGuestMessage = document.getElementById('modalGuestMessage');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+const modalOpenBtn = document.getElementById('modalOpenBtn');
+const modalCloseBtns = document.querySelectorAll('#modalCloseBtn, #modalCloseBtn2');
+
+// ==========================================
+// AUTHENTICATION STATE
+// ==========================================
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    updateUI(user);
+});
+
+function updateUI(user) {
+    const loginLink = document.getElementById('loginLink');
+    const signupBtn = document.getElementById('signupBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const dashboardLink = document.getElementById('dashboardLink');
+    const benefitsTitle = document.getElementById('benefitsTitle');
+    const ctaText = document.getElementById('ctaText');
+    const ctaSection = document.getElementById('ctaSection');
+
+    if (user) {
+        if (loginLink) loginLink.style.display = 'none';
+        if (signupBtn) signupBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'inline-block';
+        if (userNameDisplay) {
+            userNameDisplay.style.display = 'inline-block';
+            userNameDisplay.textContent = user.displayName || user.email || 'User';
         }
+        if (dashboardLink) dashboardLink.style.display = 'inline-block';
+        if (guestNotice) guestNotice.style.display = 'none';
+        if (benefitsTitle) benefitsTitle.textContent = '🎉 Welcome back! You have access to all features';
+        if (ctaText) ctaText.textContent = 'Create, save, and manage all your links in one place.';
+        if (ctaSection) {
+            const btn = ctaSection.querySelector('.cta-box .btn');
+            if (btn) {
+                btn.textContent = 'Go to Dashboard';
+                btn.href = '/dashboard.html';
+            }
+        }
+    } else {
+        if (loginLink) loginLink.style.display = 'inline-block';
+        if (signupBtn) signupBtn.style.display = 'inline-block';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        if (userNameDisplay) userNameDisplay.style.display = 'none';
+        if (dashboardLink) dashboardLink.style.display = 'none';
+        if (guestNotice) guestNotice.style.display = 'flex';
+        if (benefitsTitle) benefitsTitle.textContent = '🚀 Sign up for free to unlock more features';
+        if (ctaText) ctaText.textContent = 'Start shortening URLs instantly - no account needed! Create an account to save and manage your links.';
+        if (ctaSection) {
+            const btn = ctaSection.querySelector('.cta-box .btn');
+            if (btn) {
+                btn.textContent = 'Sign Up Free';
+                btn.href = '/register.html';
+            }
+        }
+    }
+}
 
-        // Validate URL format
+// ==========================================
+// FORM SUBMISSION
+// ==========================================
+if (shortenForm) {
+    shortenForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('shortenBtn');
+        const btnLabel = submitBtn.querySelector('.btn-label');
+        const btnIcon = submitBtn.querySelector('.btn-icon');
+        const btnLoader = submitBtn.querySelector('.btn-loader');
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        btnLabel.textContent = 'Creating...';
+        btnIcon.style.display = 'none';
+        btnLoader.style.display = 'inline-block';
+
         try {
-            new URL(longUrl);
-        } catch {
-            throw new Error('Invalid URL format. Please include http:// or https://');
+            const result = await createShortLink(
+                longUrl.value,
+                customAlias.value,
+                analyticsPassword.value,
+                linkTitle.value,
+                expiresInDays.value ? parseInt(expiresInDays.value) : null,
+                currentUser ? currentUser.uid : null
+            );
+
+            showToast('🎉 Link created successfully!');
+            showModal(result);
+            shortenForm.reset();
+
+        } catch (error) {
+            console.error('Error creating link:', error);
+            showToast(error.message || 'Failed to create short link', 'error');
+        } finally {
+            // Reset button
+            submitBtn.disabled = false;
+            btnLabel.textContent = 'SHORTEN';
+            btnIcon.style.display = 'inline-block';
+            btnLoader.style.display = 'none';
         }
+    });
+}
 
-        let shortCode = customAlias ? customAlias.trim() : null;
+// ==========================================
+// MODAL
+// ==========================================
+function showModal(linkData) {
+    const baseUrl = window.location.origin;
+    const shortUrl = `${baseUrl}/${linkData.shortCode}`;
 
-        // If custom alias provided, validate it
-        if (shortCode) {
-            if (!/^[a-zA-Z0-9-_]{3,30}$/.test(shortCode)) {
-                throw new Error('Alias must be 3-30 characters and contain only letters, numbers, hyphens, and underscores');
-            }
+    modalShortUrl.href = shortUrl;
+    modalShortUrl.textContent = shortUrl;
+    modalAlias.textContent = linkData.shortCode;
+    modalOriginalUrl.href = linkData.longUrl;
+    modalOriginalUrl.textContent = linkData.longUrl.length > 50 ? linkData.longUrl.substring(0, 50) + '...' : linkData.longUrl;
+    modalExpiry.textContent = linkData.expiresAt ? new Date(linkData.expiresAt).toLocaleDateString() : 'Never expires';
+    modalPassword.textContent = linkData.analyticsPassword ? '🔒 Password protected' : 'Public';
 
-            const isUnique = await checkShortCodeUnique(shortCode);
-            if (!isUnique) {
-                throw new Error('This alias is already taken. Please choose another.');
-            }
-        } else {
-            shortCode = await generateShortCode();
-        }
-
-        // Prepare link data
-        const linkData = {
-            longUrl: longUrl.trim(),
-            shortCode: shortCode,
-            clicks: 0,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            analyticsPassword: analyticsPassword ? analyticsPassword.trim() : null,
-            title: linkTitle ? linkTitle.trim() : null,
-            expiresAt: expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000) : null,
-            isActive: true,
-            // Store userId if provided, otherwise set as guest
-            userId: userId || null,
-            isGuest: !userId
-        };
-
-        // Save to Firestore
-        const linksRef = collection(db, 'links');
-        const docRef = await addDoc(linksRef, linkData);
-
-        // Get the created document
-        const docSnapshot = await getDoc(docRef);
-
-        if (!docSnapshot.exists()) {
-            throw new Error('Failed to retrieve created link');
-        }
-
-        return {
-            id: docRef.id,
-            ...docSnapshot.data(),
-            createdAt: docSnapshot.data().createdAt?.toDate?.() || new Date(),
-            updatedAt: docSnapshot.data().updatedAt?.toDate?.() || new Date()
-        };
-
-    } catch (error) {
-        console.error('Error creating short link:', error);
-        throw error;
+    if (!currentUser) {
+        modalGuestMessage.style.display = 'block';
+    } else {
+        modalGuestMessage.style.display = 'none';
     }
-};
 
-// Get link by short code
-export const getLinkByShortCode = async (shortCode) => {
-    try {
-        const linksRef = collection(db, 'links');
-        const q = query(linksRef, where('shortCode', '==', shortCode), where('isActive', '==', true));
-        const querySnapshot = await getDocs(q);
+    modalOverlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
-        if (querySnapshot.empty) {
-            return null;
-        }
+    modalOverlay.dataset.shortUrl = shortUrl;
+    modalOverlay.dataset.longUrl = linkData.longUrl;
+}
 
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
+function closeModal() {
+    modalOverlay.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
 
-        // Check if link has expired
-        if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
-            await updateDoc(doc.ref, { isActive: false });
-            return null;
-        }
-
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-            updatedAt: data.updatedAt?.toDate?.() || new Date(),
-            expiresAt: data.expiresAt?.toDate?.() || null
-        };
-    } catch (error) {
-        console.error('Error getting link:', error);
-        return null;
-    }
-};
-
-// Increment click count
-export const incrementClicks = async (linkId) => {
-    try {
-        const linkRef = doc(db, 'links', linkId);
-        const docSnap = await getDoc(linkRef);
-        if (docSnap.exists()) {
-            const currentClicks = docSnap.data().clicks || 0;
-            await updateDoc(linkRef, {
-                clicks: currentClicks + 1,
-                lastClicked: serverTimestamp()
-            });
-        }
-    } catch (error) {
-        console.error('Error incrementing clicks:', error);
-    }
-};
-
-// Get user's links
-export const getUserLinks = async (userId) => {
-    try {
-        if (!userId) {
-            return [];
-        }
-        
-        const linksRef = collection(db, 'links');
-        const q = query(linksRef, where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
-
-        const links = [];
-        querySnapshot.forEach(doc => {
-            const data = doc.data();
-            links.push({
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate?.() || new Date(),
-                updatedAt: data.updatedAt?.toDate?.() || new Date(),
-                expiresAt: data.expiresAt?.toDate?.() || null
-            });
+// Copy short URL from modal
+window.copyShortUrl = function() {
+    const shortUrl = modalOverlay.dataset.shortUrl;
+    if (shortUrl) {
+        navigator.clipboard.writeText(shortUrl).then(() => {
+            showToast('Link copied to clipboard!');
+        }).catch(() => {
+            const textArea = document.createElement('textarea');
+            textArea.value = shortUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+            showToast('Link copied to clipboard!');
         });
-
-        // Sort by createdAt descending (newest first)
-        links.sort((a, b) => b.createdAt - a.createdAt);
-
-        return links;
-    } catch (error) {
-        console.error('Error getting user links:', error);
-        return [];
     }
 };
 
-// Delete a link
-export const deleteLink = async (linkId, userId) => {
-    try {
-        // Verify ownership before deletion
-        const linkRef = doc(db, 'links', linkId);
-        const docSnap = await getDoc(linkRef);
-        
-        if (!docSnap.exists()) {
-            throw new Error('Link not found');
-        }
-        
-        const data = docSnap.data();
-        
-        // Only allow deletion if user owns the link or if it's a guest link and no userId provided
-        if (userId && data.userId && data.userId !== userId) {
-            throw new Error('You do not have permission to delete this link');
-        }
-        
-        await deleteDoc(linkRef);
-        return true;
-    } catch (error) {
-        console.error('Error deleting link:', error);
-        throw error;
-    }
-};
+// Copy to clipboard
+if (modalCopyBtn) {
+    modalCopyBtn.addEventListener('click', window.copyShortUrl);
+}
 
-// Update a link
-export const updateLink = async (linkId, updates, userId) => {
-    try {
-        // Verify ownership before update
-        const linkRef = doc(db, 'links', linkId);
-        const docSnap = await getDoc(linkRef);
-        
-        if (!docSnap.exists()) {
-            throw new Error('Link not found');
+// Open link
+if (modalOpenBtn) {
+    modalOpenBtn.addEventListener('click', () => {
+        const longUrl = modalOverlay.dataset.longUrl;
+        if (longUrl) {
+            window.open(longUrl, '_blank');
         }
-        
-        const data = docSnap.data();
-        
-        // Only allow update if user owns the link
-        if (userId && data.userId && data.userId !== userId) {
-            throw new Error('You do not have permission to update this link');
-        }
-        
-        await updateDoc(linkRef, {
-            ...updates,
-            updatedAt: serverTimestamp()
-        });
-        return true;
-    } catch (error) {
-        console.error('Error updating link:', error);
-        throw error;
-    }
-};
+    });
+}
 
-// Validate short code
-export const validateShortCode = async (shortCode) => {
+// Close modal events
+modalCloseBtns.forEach(btn => {
+    btn.addEventListener('click', closeModal);
+});
+
+if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.style.display === 'flex') {
+        closeModal();
+    }
+});
+
+// ==========================================
+// MOBILE TOGGLE
+// ==========================================
+const mobileToggle = document.getElementById('mobileToggle');
+const navLinks = document.getElementById('navLinks');
+
+if (mobileToggle && navLinks) {
+    mobileToggle.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+    });
+}
+
+// ==========================================
+// HANDLE LOGOUT
+// ==========================================
+window.handleLogout = async function() {
     try {
-        const link = await getLinkByShortCode(shortCode);
-        return link !== null;
+        const { signOut } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
+        await signOut(auth);
+        showToast('Logged out successfully', 'info');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 500);
     } catch (error) {
-        console.error('Error validating short code:', error);
-        return false;
+        console.error('Logout error:', error);
+        showToast('Failed to logout', 'error');
     }
 };

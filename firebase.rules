@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -26,16 +27,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Links collection - Critical for redirect reliability
+    // Links collection - Critical for redirects
     match /links/{linkId} {
-      // Read: Allow if link is active (public) or user owns it
-      // This is the most important rule for redirects
-      allow read: if 
-        resource.data.isActive == true || 
-        isDocumentOwner() ||
-        isGuestLink();
+      // READ: Anyone can read active links (required for redirects)
+      allow read: if resource.data.isActive == true || isDocumentOwner();
       
-      // Create: Anyone can create (guest or authenticated)
+      // CREATE: Anyone can create links (guest or authenticated)
       allow create: if 
         (request.resource.data.shortCode != null &&
         request.resource.data.longUrl != null) &&
@@ -44,14 +41,11 @@ service cloud.firestore {
           (request.resource.data.isGuest == true && request.resource.data.userId == null)
         );
       
-      // Update: Must be owner
+      // UPDATE: Only authenticated owners can update
       allow update: if isAuthenticated() && isDocumentOwner();
       
-      // Delete: Must be owner
+      // DELETE: Only authenticated owners can delete
       allow delete: if isAuthenticated() && isDocumentOwner();
-      
-      // List: Only for authenticated users with their own links
-      allow list: if isAuthenticated() && request.query.userId == request.auth.uid;
     }
 
     // Analytics collection
